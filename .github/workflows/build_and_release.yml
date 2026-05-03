@@ -28,10 +28,9 @@ jobs:
 
       - name: Decode Keystore
         run: |
-          # Write secret to file, removing all whitespace and newlines first
-          echo "${{ secrets.RELEASE_KEYSTORE }}" | tr -d '[:space:]' > release.keystore.b64
-          # Decode base64
-          base64 -d release.keystore.b64 > android/app/release.keystore
+          echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.b64
+          # 使用 --decode 并通过 tr 删除可能包含的各种非法换行、回车、空格等字符
+          cat release.keystore.b64 | tr -d '\n\r\t ' | base64 --decode > android/app/release.keystore
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
