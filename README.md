@@ -80,4 +80,4 @@ lib/
 
 ## 📄 许可证 (License)
 
-此项目基于 Flutter 框架开发。
+本项目采用 [GNU General Public License v3.0 (GPL-3.0)](LICENSE) 许可证。
