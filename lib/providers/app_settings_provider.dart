@@ -11,12 +11,14 @@ class AppSettingsProvider extends ChangeNotifier {
   double _backgroundOpacity = 0.5;
   bool _enableDynamicColor = false;
   Color? _dynamicColor;
+  ThemeMode _themeMode = ThemeMode.system;
 
   String get languageCode => _languageCode;
   String? get backgroundImagePath => _backgroundImagePath;
   double get backgroundOpacity => _backgroundOpacity;
   bool get enableDynamicColor => _enableDynamicColor;
   Color? get dynamicColor => _dynamicColor;
+  ThemeMode get themeMode => _themeMode;
 
   AppSettingsProvider() {
     _loadSettings();
@@ -28,6 +30,11 @@ class AppSettingsProvider extends ChangeNotifier {
     _backgroundImagePath = _prefs?.getString('backgroundImagePath');
     _backgroundOpacity = _prefs?.getDouble('backgroundOpacity') ?? 0.5;
     _enableDynamicColor = _prefs?.getBool('enableDynamicColor') ?? false;
+    
+    final themeStr = _prefs?.getString('themeMode');
+    if (themeStr == 'light') _themeMode = ThemeMode.light;
+    else if (themeStr == 'dark') _themeMode = ThemeMode.dark;
+    else _themeMode = ThemeMode.system;
 
     if (_enableDynamicColor && _backgroundImagePath != null) {
       await _extractDynamicColor();
@@ -69,6 +76,15 @@ class AppSettingsProvider extends ChangeNotifier {
     } else {
       _dynamicColor = null;
     }
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    String modeStr = 'system';
+    if (mode == ThemeMode.light) modeStr = 'light';
+    if (mode == ThemeMode.dark) modeStr = 'dark';
+    await _prefs?.setString('themeMode', modeStr);
     notifyListeners();
   }
 

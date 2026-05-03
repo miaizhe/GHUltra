@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/github_service.dart';
 import '../widgets/repo_card.dart';
+import '../l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   final String token;
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: widget.isTab ? null : AppBar(
-        title: const Text('Repositories'),
+        title: Text(context.l10n('repositories')),
         backgroundColor: Colors.transparent,
       ),
       body: _buildBody(),
@@ -80,25 +81,27 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadData,
-              child: const Text('Retry'),
+              child: Text(context.l10n('retry')),
             ),
           ],
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _repositories?.length ?? 0,
-        itemBuilder: (context, index) {
-          final repo = _repositories![index];
-          return RepoCard(repo: repo)
-              .animate()
-              .fadeIn(delay: (50 * index).ms)
-              .slideX(begin: 0.1);
-        },
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: _loadData,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: _repositories?.length ?? 0,
+          itemBuilder: (context, index) {
+            final repo = _repositories![index];
+            return RepoCard(repo: repo)
+                .animate()
+                .fadeIn(delay: (50 * index).ms)
+                .slideX(begin: 0.1);
+          },
+        ),
       ),
     );
   }

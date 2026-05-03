@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/github_service.dart';
 import '../providers/app_settings_provider.dart';
+import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -69,12 +70,12 @@ class _AccountScreenState extends State<AccountScreen> {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Account'),
+        title: Text(context.l10n('account')),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.redAccent),
             onPressed: _logout,
-            tooltip: 'Logout',
+            tooltip: context.l10n('logout'),
           ),
         ],
       ),
@@ -98,7 +99,7 @@ class _AccountScreenState extends State<AccountScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadProfile,
-              child: const Text('Retry'),
+              child: Text(context.l10n('retry')),
             ),
           ],
         ),
@@ -141,24 +142,24 @@ class _AccountScreenState extends State<AccountScreen> {
         const Divider(),
         ListTile(
           leading: const Icon(Icons.group),
-          title: const Text('Followers'),
+          title: Text(context.l10n('followers')),
           trailing: Text('${_userProfile!['followers'] ?? 0}'),
         ),
         ListTile(
           leading: const Icon(Icons.person_add),
-          title: const Text('Following'),
+          title: Text(context.l10n('following')),
           trailing: Text('${_userProfile!['following'] ?? 0}'),
         ),
         ListTile(
           leading: const Icon(Icons.book),
-          title: const Text('Public Repos'),
+          title: Text(context.l10n('public_repos')),
           trailing: Text('${_userProfile!['public_repos'] ?? 0}'),
         ),
         const SizedBox(height: 24),
         const Divider(),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('App Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(context.l10n('app_settings'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
         Consumer<AppSettingsProvider>(
           builder: (context, settings, child) {
@@ -167,13 +168,13 @@ class _AccountScreenState extends State<AccountScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.language),
-                  title: const Text('Language'),
+                  title: Text(context.l10n('language')),
                   trailing: DropdownButton<String>(
                     value: settings.languageCode,
-                    items: const [
-                      DropdownMenuItem(value: 'system', child: Text('System')),
-                      DropdownMenuItem(value: 'en', child: Text('English')),
-                      DropdownMenuItem(value: 'zh', child: Text('中文')),
+                    items: [
+                      DropdownMenuItem(value: 'system', child: Text(context.l10n('system'))),
+                      DropdownMenuItem(value: 'en', child: Text(context.l10n('english'))),
+                      DropdownMenuItem(value: 'zh', child: Text(context.l10n('chinese'))),
                     ],
                     onChanged: (val) {
                       if (val != null) settings.setLanguage(val);
@@ -181,9 +182,24 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.brightness_medium),
+                  title: Text(context.l10n('theme_mode')),
+                  trailing: DropdownButton<ThemeMode>(
+                    value: settings.themeMode,
+                    items: [
+                      DropdownMenuItem(value: ThemeMode.system, child: Text(context.l10n('system'))),
+                      DropdownMenuItem(value: ThemeMode.light, child: Text(context.l10n('light_mode'))),
+                      DropdownMenuItem(value: ThemeMode.dark, child: Text(context.l10n('dark_mode'))),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) settings.setThemeMode(val);
+                    },
+                  ),
+                ),
+                ListTile(
                   leading: const Icon(Icons.wallpaper),
-                  title: const Text('Custom Background'),
-                  subtitle: Text(settings.backgroundImagePath != null ? 'Image Set' : 'None'),
+                  title: Text(context.l10n('custom_background')),
+                  subtitle: Text(settings.backgroundImagePath != null ? context.l10n('image_set') : context.l10n('none')),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -211,7 +227,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
                       children: [
-                        const Text('Background Opacity:'),
+                        Text('${context.l10n('background_opacity')}:'),
                         Expanded(
                           child: Slider(
                             value: settings.backgroundOpacity,
@@ -225,8 +241,8 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                   SwitchListTile(
                     secondary: const Icon(Icons.color_lens),
-                    title: const Text('Dynamic Color'),
-                    subtitle: const Text('Extract primary color from background'),
+                    title: Text(context.l10n('dynamic_color')),
+                    subtitle: Text(context.l10n('extract_primary_color')),
                     value: settings.enableDynamicColor,
                     onChanged: (val) => settings.setEnableDynamicColor(val),
                   ),
@@ -237,15 +253,15 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
         const SizedBox(height: 24),
         const Divider(),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Account Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(context.l10n('account_settings'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 8),
         ElevatedButton.icon(
           onPressed: _logout,
           icon: const Icon(Icons.logout),
-          label: const Text('Logout'),
+          label: Text(context.l10n('logout')),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.redAccent,
           ),
