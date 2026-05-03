@@ -33,9 +33,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("release.keystore")
-            storePassword = "android"
-            keyAlias = "ghultra"
-            keyPassword = "android"
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "ghultra"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
         }
     }
 

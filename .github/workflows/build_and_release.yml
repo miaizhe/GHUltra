@@ -23,6 +23,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE }}" > release.keystore.b64
+          base64 -d -i release.keystore.b64 > android/app/release.keystore
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -33,6 +38,10 @@ jobs:
 
       - name: Build APK
         run: flutter build apk --release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
