@@ -1,6 +1,9 @@
 name: Build and Release
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # 每天周一的 00:00 (UTC 时间，约北京时间 08:00) 自动运行
     - cron: '0 0 * * 1'
