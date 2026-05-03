@@ -1,0 +1,116 @@
+name: Build and Release
+
+on:
+  schedule:
+    # 每天周一的 00:00 (UTC 时间，约北京时间 08:00) 自动运行
+    - cron: '0 0 * * 1'
+  workflow_dispatch: # 允许在 GitHub Actions 页面手动触发工作流，方便测试
+
+permissions:
+  contents: write # 允许工作流创建和修改 Release
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-windows:
+    name: Build Windows App
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Compress Windows build
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath GHUltra-Windows.zip
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: GHUltra-Windows.zip
+
+  release:
+    name: Create GitHub Release
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1 # 只需要最新的提交信息即可
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts/android
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-zip
+          path: artifacts/windows
+
+      - name: Generate Release Info
+        id: release_info
+        run: |
+          # 获取当前日期，格式例如 2024.05.20
+          echo "DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
+          # 获取最新的提交信息的第一行
+          echo "COMMIT_MSG=$(git log -1 --pretty=%B | head -n 1)" >> $GITHUB_ENV
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: release-${{ env.DATE }}
+          name: 自动发布版 ${{ env.DATE }}
+          body: |
+            ## 🚀 每周自动构建发布
+            
+            📅 **打包日期**: ${{ env.DATE }}
+            📝 **最新提交**: ${{ env.COMMIT_MSG }}
+            
+            包含 Android (APK) 和 Windows (ZIP) 的安装包。
+          files: |
+            artifacts/android/app-release.apk
+            artifacts/windows/GHUltra-Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
