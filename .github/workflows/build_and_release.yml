@@ -42,7 +42,12 @@ jobs:
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release || {
+            echo "::error::Build failed, printing daemon logs..."
+            find ~/.gradle/daemon -name "*.out.log" -exec cat {} + || true
+            exit 1
+          }
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
