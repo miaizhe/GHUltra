@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'home_screen.dart'; // Will rename to repos_screen later or use as tab
 import 'search_screen.dart';
 import 'notifications_screen.dart';
@@ -76,14 +77,20 @@ class _MainScreenState extends State<MainScreen> {
       }
 
       if (urlToOpen != null && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => WebViewScreen(
-              url: urlToOpen!,
-              title: 'Notification',
+        if (Platform.isAndroid) {
+          // Use Chrome Custom Tabs on Android for Passkey support
+          await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.inAppBrowserView);
+        } else {
+          // Use WebView for Windows
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => WebViewScreen(
+                url: urlToOpen!,
+                title: 'Notification',
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     });
   }

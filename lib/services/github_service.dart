@@ -56,7 +56,7 @@ class GitHubService {
 
   Future<List<dynamic>> getBranches(String fullName) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/repos/$fullName/branches'),
+      Uri.parse('$_baseUrl/repos/$fullName/branches?per_page=100'),
       headers: _headers,
     );
     if (response.statusCode == 200) {
@@ -189,27 +189,31 @@ class GitHubService {
 
   Future<List<dynamic>> getWorkflows(String fullName) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/repos/$fullName/actions/workflows'),
+      Uri.parse('$_baseUrl/repos/$fullName/actions/workflows?per_page=100'),
       headers: _headers,
     );
 
     if (response.statusCode == 200) {
       return json.decode(response.body)['workflows'];
+    } else if (response.statusCode == 404) {
+      return []; // Actions not enabled or no workflows
     } else {
-      throw Exception('Failed to load workflows');
+      throw Exception('Failed to load workflows: ${response.statusCode}');
     }
   }
 
   Future<List<dynamic>> getWorkflowRuns(String fullName) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/repos/$fullName/actions/runs'),
+      Uri.parse('$_baseUrl/repos/$fullName/actions/runs?per_page=50'),
       headers: _headers,
     );
 
     if (response.statusCode == 200) {
       return json.decode(response.body)['workflow_runs'];
+    } else if (response.statusCode == 404) {
+      return []; // Actions not enabled
     } else {
-      throw Exception('Failed to load workflow runs');
+      throw Exception('Failed to load workflow runs: ${response.statusCode}');
     }
   }
 

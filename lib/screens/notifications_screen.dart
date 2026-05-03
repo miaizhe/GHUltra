@@ -3,6 +3,7 @@ import '../services/github_service.dart';
 import 'webview_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final String token;
@@ -153,14 +154,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }
 
               if (urlToOpen != null && mounted) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => WebViewScreen(
-                      url: urlToOpen!,
-                      title: subject['title'] ?? 'Notification',
+                if (Theme.of(context).platform == TargetPlatform.android) {
+                  // Use url_launcher for Android Custom Tabs which supports Passkeys (WebAuthn)
+                  await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.inAppBrowserView);
+                } else {
+                  // For Windows and others use the embedded WebView
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => WebViewScreen(
+                        url: urlToOpen!,
+                        title: subject['title'] ?? 'Notification',
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               } else if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Cannot find a link to open for this notification.')),
