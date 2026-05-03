@@ -1,0 +1,28 @@
+name: ghultra
+description: "A modern, multi-platform GitHub client for Windows and Android."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  shared_preferences: ^2.2.1
+  flutter_animate: ^4.2.0+1
+  cupertino_icons: ^1.0.6
+  url_launcher: ^6.2.6
+  window_manager: ^0.3.8
+  flutter_markdown: ^0.6.18
+  webview_windows: ^0.3.0
+  webview_flutter: ^4.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

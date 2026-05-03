@@ -1,0 +1,265 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class GitHubService {
+  final String token;
+  static const String _baseUrl = 'https://api.github.com';
+
+  GitHubService(this.token);
+
+  Map<String, String> get _headers => {
+        'Authorization': 'token $token',
+        'Accept': 'application/vnd.github.v3+json',
+      };
+
+  Future<Map<String, dynamic>> getUserProfile() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/user'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load user profile: ${response.statusCode}');
+    }
+  }
+
+  Future<List<dynamic>> getUserRepositories() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/user/repos?sort=updated&per_page=50'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load repositories');
+    }
+  }
+
+  Future<List<dynamic>> searchRepositories(String query) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/search/repositories?q=$query&sort=stars&order=desc'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['items'];
+    } else {
+      throw Exception('Failed to search repositories');
+    }
+  }
+
+  // --- Repo Details & Files ---
+
+  Future<Map<String, dynamic>> getReadme(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/readme'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 404) {
+      return {}; // No README
+    } else {
+      throw Exception('Failed to load README');
+    }
+  }
+
+  Future<Map<String, dynamic>> getFileInfo(String fullName, String path) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to get file info');
+    }
+  }
+
+  Future<void> updateFile(String fullName, String path, String message, String content, String sha) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
+      headers: _headers,
+      body: json.encode({
+        'message': message,
+        'content': base64.encode(utf8.encode(content)),
+        'sha': sha,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to update file: ${response.body}');
+    }
+  }
+
+  Future<List<dynamic>> getRepoContents(String fullName, [String path = '']) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = json.decode(response.body);
+      if (decoded is List) return decoded;
+      if (decoded is Map) return [decoded]; // Single file
+      return [];
+    } else {
+      throw Exception('Failed to load repo contents');
+    }
+  }
+
+  Future<String> getRawFileContent(String downloadUrl) async {
+    final response = await http.get(
+      Uri.parse(downloadUrl),
+      headers: {'Authorization': 'token $token'}, // Raw URL sometimes needs auth
+    );
+    if (response.statusCode == 200) {
+      return response.body;
+    } else {
+      throw Exception('Failed to download file');
+    }
+  }
+
+  // --- Actions ---
+
+  Future<List<dynamic>> getWorkflows(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/actions/workflows'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['workflows'];
+    } else {
+      throw Exception('Failed to load workflows');
+    }
+  }
+
+  Future<List<dynamic>> getWorkflowRuns(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/actions/runs'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['workflow_runs'];
+    } else {
+      throw Exception('Failed to load workflow runs');
+    }
+  }
+
+  Future<void> dispatchWorkflow(String fullName, int workflowId, String ref) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/repos/$fullName/actions/workflows/$workflowId/dispatches'),
+      headers: _headers,
+      body: json.encode({'ref': ref}),
+    );
+
+    if (response.statusCode != 204) {
+      throw Exception('Failed to dispatch workflow: ${response.body}');
+    }
+  }
+
+  Future<List<dynamic>> getWorkflowRunJobs(String fullName, int runId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/actions/runs/$runId/jobs'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['jobs'];
+    } else {
+      throw Exception('Failed to load workflow run jobs');
+    }
+  }
+
+  Future<String?> getJobLogs(String fullName, int jobId) async {
+    // Note: GitHub Actions API requires 'Accept: application/vnd.github.v3+json' usually,
+    // but for logs, we need 'Accept: application/vnd.github.v3+json' for the metadata
+    // or just let it redirect. However, some endpoints require you to NOT send the standard headers
+    // on the redirected URL (like Amazon S3 signature mismatch errors if you send Authorization header).
+    
+    final request = http.Request('GET', Uri.parse('$_baseUrl/repos/$fullName/actions/jobs/$jobId/logs'));
+    request.headers.addAll(_headers);
+    request.followRedirects = false; // Manually handle redirect
+
+    final client = http.Client();
+    try {
+      final response = await client.send(request);
+
+      if (response.statusCode == 200) {
+        return await response.stream.bytesToString();
+      } else if (response.statusCode == 302 || response.statusCode == 301) {
+        final location = response.headers['location'];
+        if (location != null) {
+          // IMPORTANT: Do NOT send GitHub authorization headers to the redirect URL (usually AWS S3/Azure Blob)
+          final redirectResponse = await http.get(Uri.parse(location));
+          if (redirectResponse.statusCode == 200) {
+            return redirectResponse.body;
+          } else {
+            throw Exception('Failed to download log from redirect: ${redirectResponse.statusCode}');
+          }
+        }
+        throw Exception('Redirect location missing');
+      } else if (response.statusCode == 404) {
+        // Log is not ready yet
+        return null;
+      } else {
+        throw Exception('Failed to load job logs. Status: ${response.statusCode}');
+      }
+    } finally {
+      client.close();
+    }
+  }
+
+  // --- Releases ---
+
+  Future<List<dynamic>> getReleases(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/releases'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load releases');
+    }
+  }
+
+  // --- Search Code ---
+
+  Future<List<dynamic>> searchCode(String fullName, String query) async {
+    final encodedQuery = Uri.encodeComponent('$query repo:$fullName');
+    final response = await http.get(
+      Uri.parse('$_baseUrl/search/code?q=$encodedQuery'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['items'];
+    } else {
+      throw Exception('Failed to search code');
+    }
+  }
+
+  // --- Notifications ---
+
+  Future<List<dynamic>> getNotifications() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/notifications?all=false'), // get unread notifications
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load notifications');
+    }
+  }
+}

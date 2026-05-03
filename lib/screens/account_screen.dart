@@ -1,0 +1,164 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/github_service.dart';
+import 'login_screen.dart';
+
+class AccountScreen extends StatefulWidget {
+  final String token;
+
+  const AccountScreen({super.key, required this.token});
+
+  @override
+  State<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  late GitHubService _service;
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = GitHubService(widget.token);
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final profile = await _service.getUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('github_token');
+    if (!mounted) return;
+    // PushAndRemoveUntil to clear navigation stack
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Account'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(_error!, style: const TextStyle(color: Colors.redAccent)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadProfile,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_userProfile == null) return const SizedBox();
+
+    return ListView(
+      padding: const EdgeInsets.all(24.0),
+      children: [
+        Center(
+          child: CircleAvatar(
+            radius: 60,
+            backgroundImage: NetworkImage(_userProfile!['avatar_url'] ?? ''),
+            backgroundColor: Colors.transparent,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: Text(
+            _userProfile!['name'] ?? _userProfile!['login'] ?? 'Unknown User',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Text(
+            '@${_userProfile!['login']}',
+            style: const TextStyle(fontSize: 16, color: Color(0xFF57606A)),
+          ),
+        ),
+        const SizedBox(height: 32),
+        if (_userProfile!['bio'] != null) ...[
+          const Text('Bio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          Text(_userProfile!['bio'], style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 24),
+        ],
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.group),
+          title: const Text('Followers'),
+          trailing: Text('${_userProfile!['followers'] ?? 0}'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.person_add),
+          title: const Text('Following'),
+          trailing: Text('${_userProfile!['following'] ?? 0}'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.book),
+          title: const Text('Public Repos'),
+          trailing: Text('${_userProfile!['public_repos'] ?? 0}'),
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton.icon(
+          onPressed: _logout,
+          icon: const Icon(Icons.logout),
+          label: const Text('Logout'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+          ),
+        )
+      ],
+    );
+  }
+}
