@@ -55,7 +55,9 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      appBar: widget.isTab ? null : AppBar(
+        backgroundColor: Colors.transparent,
         title: TextField(
           controller: _searchController,
           autofocus: true,

@@ -89,6 +89,18 @@ class _RepoOverviewTabState extends State<RepoOverviewTab> {
               const Icon(Icons.call_split, size: 20, color: Color(0xFF57606A)),
               const SizedBox(width: 4),
               Text('${widget.repo['forks_count'] ?? 0} forks', style: const TextStyle(color: Color(0xFF57606A))),
+              if (widget.repo['license'] != null && widget.repo['license']['name'] != null) ...[
+                const SizedBox(width: 16),
+                const Icon(Icons.gavel, size: 20, color: Color(0xFF57606A)),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    widget.repo['license']['name'],
+                    style: const TextStyle(color: Color(0xFF57606A)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 24),

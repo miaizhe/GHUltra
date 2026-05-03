@@ -55,8 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Repositories'),
+      backgroundColor: Colors.transparent,
+      appBar: widget.isTab ? null : AppBar(
+        title: const Text('Repositories'),
+        backgroundColor: Colors.transparent,
       ),
       body: _buildBody(),
     );

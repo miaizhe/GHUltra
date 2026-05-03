@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/github_service.dart';
+import '../providers/app_settings_provider.dart';
 import 'login_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -63,7 +66,9 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Account'),
         actions: [
           IconButton(
@@ -149,7 +154,94 @@ class _AccountScreenState extends State<AccountScreen> {
           title: const Text('Public Repos'),
           trailing: Text('${_userProfile!['public_repos'] ?? 0}'),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
+        const Divider(),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.0),
+          child: Text('App Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        Consumer<AppSettingsProvider>(
+          builder: (context, settings, child) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: const Text('Language'),
+                  trailing: DropdownButton<String>(
+                    value: settings.languageCode,
+                    items: const [
+                      DropdownMenuItem(value: 'system', child: Text('System')),
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'zh', child: Text('中文')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) settings.setLanguage(val);
+                    },
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.wallpaper),
+                  title: const Text('Custom Background'),
+                  subtitle: Text(settings.backgroundImagePath != null ? 'Image Set' : 'None'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (settings.backgroundImagePath != null)
+                        IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.red),
+                          onPressed: () => settings.setBackgroundImage(null),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.image_search),
+                        onPressed: () async {
+                          FilePickerResult? result = await FilePicker.platform.pickFiles(
+                            type: FileType.image,
+                          );
+                          if (result != null && result.files.single.path != null) {
+                            settings.setBackgroundImage(result.files.single.path!);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                if (settings.backgroundImagePath != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        const Text('Background Opacity:'),
+                        Expanded(
+                          child: Slider(
+                            value: settings.backgroundOpacity,
+                            min: 0.0,
+                            max: 1.0,
+                            onChanged: (val) => settings.setBackgroundOpacity(val),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.color_lens),
+                    title: const Text('Dynamic Color'),
+                    subtitle: const Text('Extract primary color from background'),
+                    value: settings.enableDynamicColor,
+                    onChanged: (val) => settings.setEnableDynamicColor(val),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.0),
+          child: Text('Account Settings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(height: 8),
         ElevatedButton.icon(
           onPressed: _logout,
           icon: const Icon(Icons.logout),

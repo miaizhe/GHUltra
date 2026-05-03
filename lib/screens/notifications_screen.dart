@@ -55,8 +55,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      appBar: widget.isTab ? null : AppBar(
         title: const Text('Notifications'),
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
