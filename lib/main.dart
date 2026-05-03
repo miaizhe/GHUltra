@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io' show Platform;
+import 'package:permission_handler/permission_handler.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +13,8 @@ void main() async {
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
   }
+
+  await NotificationService().init();
 
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('github_token');

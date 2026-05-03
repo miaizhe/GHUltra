@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'home_screen.dart'; // Will rename to repos_screen later or use as tab
 import 'search_screen.dart';
 import 'notifications_screen.dart';
 import 'account_screen.dart';
+import 'webview_screen.dart';
+import '../services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String token;
@@ -27,6 +33,59 @@ class _MainScreenState extends State<MainScreen> {
       NotificationsScreen(token: widget.token, isTab: true),
       AccountScreen(token: widget.token),
     ];
+    _requestPermissions();
+    _listenToNotifications();
+  }
+
+  void _requestPermissions() async {
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+      await Permission.ignoreBatteryOptimizations.request();
+    }
+  }
+
+  void _listenToNotifications() {
+    NotificationStream.stream.stream.listen((data) async {
+      if (!mounted) return;
+      
+      setState(() {
+        _currentIndex = 2; // Navigate to Inbox tab
+      });
+
+      String? urlToOpen;
+      try {
+        if (data['url'] != null) {
+          final response = await http.get(
+            Uri.parse(data['url']),
+            headers: {
+              'Authorization': 'token ${widget.token}',
+              'Accept': 'application/vnd.github.v3+json',
+            },
+          );
+          if (response.statusCode == 200) {
+            final respData = jsonDecode(response.body);
+            urlToOpen = respData['html_url'];
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to get html_url: $e');
+      }
+
+      if (urlToOpen == null) {
+        urlToOpen = data['html_url']; // fallback
+      }
+
+      if (urlToOpen != null && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WebViewScreen(
+              url: urlToOpen!,
+              title: 'Notification',
+            ),
+          ),
+        );
+      }
+    });
   }
 
   @override

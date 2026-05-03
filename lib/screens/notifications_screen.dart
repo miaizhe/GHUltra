@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/github_service.dart';
+import 'webview_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class NotificationsScreen extends StatefulWidget {
   final String token;
@@ -107,11 +110,62 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             leading: Icon(icon, color: iconColor),
             title: Text(subject['title']),
             subtitle: Text('${repo['full_name']} • ${notif['reason']}'),
-            onTap: () {
-              // Can navigate to details in a full app
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Tapped notification: ${subject['title']}')),
-              );
+            onTap: () async {
+              String? urlToOpen;
+              try {
+                if (subject['url'] != null) {
+                  final response = await http.get(
+                    Uri.parse(subject['url']),
+                    headers: {
+                      'Authorization': 'token ${widget.token}',
+                      'Accept': 'application/vnd.github.v3+json',
+                    },
+                  );
+                  if (response.statusCode == 200) {
+                    final data = jsonDecode(response.body);
+                    urlToOpen = data['html_url'];
+                  }
+                }
+              } catch (e) {
+                debugPrint('Failed to get html_url: $e');
+              }
+              
+              if (urlToOpen == null && subject['latest_comment_url'] != null) {
+                 try {
+                  final response = await http.get(
+                    Uri.parse(subject['latest_comment_url']),
+                    headers: {
+                      'Authorization': 'token ${widget.token}',
+                      'Accept': 'application/vnd.github.v3+json',
+                    },
+                  );
+                  if (response.statusCode == 200) {
+                    final data = jsonDecode(response.body);
+                    urlToOpen = data['html_url'];
+                  }
+                } catch (e) {
+                  debugPrint('Failed to get html_url from comment: $e');
+                }
+              }
+
+              if (urlToOpen == null) {
+                urlToOpen = repo['html_url'];
+              }
+
+              if (urlToOpen != null && mounted) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => WebViewScreen(
+                      url: urlToOpen!,
+                      title: subject['title'] ?? 'Notification',
+                    ),
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cannot find a link to open for this notification.')),
+                );
+              }
             },
           );
         },

@@ -54,6 +54,53 @@ class GitHubService {
 
   // --- Repo Details & Files ---
 
+  Future<List<dynamic>> getBranches(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/branches'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load branches');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getLatestCommit(String fullName, {String? branch}) async {
+    String url = '$_baseUrl/repos/$fullName/commits?per_page=1';
+    if (branch != null) {
+      url += '&sha=$branch';
+    }
+    final response = await http.get(Uri.parse(url), headers: _headers);
+    if (response.statusCode == 200) {
+      final List<dynamic> commits = json.decode(response.body);
+      if (commits.isNotEmpty) return commits.first;
+    }
+    return null;
+  }
+
+  Future<void> syncBranch(String fullName, String branch) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/repos/$fullName/merge-upstream'),
+      headers: _headers,
+      body: json.encode({'branch': branch}),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 409) {
+      throw Exception('Failed to sync branch: ${response.body}');
+    }
+  }
+
+  Future<void> updateRepoSettings(String fullName, Map<String, dynamic> data) async {
+    final response = await http.patch(
+      Uri.parse('$_baseUrl/repos/$fullName'),
+      headers: _headers,
+      body: json.encode(data),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update repo settings: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> getReadme(String fullName) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/repos/$fullName/readme'),
@@ -69,9 +116,13 @@ class GitHubService {
     }
   }
 
-  Future<Map<String, dynamic>> getFileInfo(String fullName, String path) async {
+  Future<Map<String, dynamic>> getFileInfo(String fullName, String path, {String? branch}) async {
+    String url = '$_baseUrl/repos/$fullName/contents/$path';
+    if (branch != null) {
+      url += '?ref=$branch';
+    }
     final response = await http.get(
-      Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
+      Uri.parse(url),
       headers: _headers,
     );
     if (response.statusCode == 200) {
@@ -81,15 +132,20 @@ class GitHubService {
     }
   }
 
-  Future<void> updateFile(String fullName, String path, String message, String content, String sha) async {
+  Future<void> updateFile(String fullName, String path, String message, String content, String sha, {String? branch}) async {
+    final body = {
+      'message': message,
+      'content': base64.encode(utf8.encode(content)),
+      'sha': sha,
+    };
+    if (branch != null) {
+      body['branch'] = branch;
+    }
+
     final response = await http.put(
       Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
       headers: _headers,
-      body: json.encode({
-        'message': message,
-        'content': base64.encode(utf8.encode(content)),
-        'sha': sha,
-      }),
+      body: json.encode(body),
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
@@ -97,9 +153,13 @@ class GitHubService {
     }
   }
 
-  Future<List<dynamic>> getRepoContents(String fullName, [String path = '']) async {
+  Future<List<dynamic>> getRepoContents(String fullName, {String path = '', String? branch}) async {
+    String url = '$_baseUrl/repos/$fullName/contents/$path';
+    if (branch != null) {
+      url += '?ref=$branch';
+    }
     final response = await http.get(
-      Uri.parse('$_baseUrl/repos/$fullName/contents/$path'),
+      Uri.parse(url),
       headers: _headers,
     );
 

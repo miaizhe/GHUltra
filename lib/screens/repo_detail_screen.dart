@@ -55,7 +55,7 @@ class _RepoDetailScreenState extends State<RepoDetailScreen> {
             RepoReleasesTab(repo: widget.repo, service: _service),
             RepoActionsTab(repo: widget.repo, service: _service),
             RepoSearchTab(repo: widget.repo, service: _service),
-            RepoSettingsTab(repo: widget.repo),
+            RepoSettingsTab(repo: widget.repo, service: _service),
           ],
         ),
       ),

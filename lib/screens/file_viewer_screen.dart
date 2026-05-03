@@ -6,12 +6,14 @@ class FileViewerScreen extends StatefulWidget {
   final Map<String, dynamic> fileItem;
   final GitHubService service;
   final String? repoFullName; // Needed for updating file
+  final String? branch;
 
   const FileViewerScreen({
     super.key,
     required this.fileItem,
     required this.service,
     this.repoFullName,
+    this.branch,
   });
 
   @override
@@ -128,7 +130,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     try {
       // 1. We need the current SHA of the file to update it.
       String path = widget.fileItem['path'] ?? widget.fileItem['name'];
-      final fileInfo = await widget.service.getFileInfo(widget.repoFullName!, path);
+      final fileInfo = await widget.service.getFileInfo(widget.repoFullName!, path, branch: widget.branch);
       final sha = fileInfo['sha'];
 
       // 2. Commit the change
@@ -138,6 +140,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
         result,
         newContent,
         sha,
+        branch: widget.branch,
       );
 
       if (mounted) {
