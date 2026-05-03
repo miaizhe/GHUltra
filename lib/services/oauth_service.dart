@@ -14,8 +14,14 @@ class OAuthService {
   static const String _redirectUri = 'http://localhost:$_port/callback';
 
   Future<String?> authenticate() async {
-    // 1. Start local server to listen for the redirect
-    HttpServer server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port);
+    HttpServer? server;
+    try {
+      // 尝试绑定到 loopback
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port);
+    } catch (e) {
+      // 如果失败，在某些 Android 设备上可能需要绑定到 anyIPv4
+      server = await HttpServer.bind(InternetAddress.anyIPv4, _port);
+    }
     
     // 2. Open browser for user to authenticate
     final authUrl = Uri.parse(
@@ -24,7 +30,7 @@ class OAuthService {
     if (await canLaunchUrl(authUrl)) {
       await launchUrl(authUrl, mode: LaunchMode.externalApplication);
     } else {
-      server.close();
+      await server.close();
       throw Exception('Could not launch browser');
     }
 
