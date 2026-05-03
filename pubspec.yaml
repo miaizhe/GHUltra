@@ -24,7 +24,8 @@ dependencies:
   local_notifier: ^0.1.6
   provider: ^6.1.5+1
   palette_generator: ^0.3.3+7
-  file_picker: ^11.0.2
+  # pinned file_picker to 8.1.4 due to build failures on latest versions (Windows: win32 dart version conflict, Android: compileSdk 35 requirement)
+  file_picker: 8.1.4
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
