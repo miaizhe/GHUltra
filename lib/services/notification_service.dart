@@ -37,7 +37,7 @@ class NotificationService {
       );
 
       await flutterLocalNotificationsPlugin.initialize(
-        settings: initializationSettings,
+        initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           if (response.payload != null) {
             _handleNotificationTap(response.payload!);
@@ -128,10 +128,10 @@ class NotificationService {
       );
 
       await flutterLocalNotificationsPlugin.show(
-        id: id,
-        title: title,
-        body: body,
-        notificationDetails: platformChannelSpecifics,
+        id,
+        title,
+        body,
+        platformChannelSpecifics,
         payload: payload,
       );
     } else if (Platform.isWindows) {
