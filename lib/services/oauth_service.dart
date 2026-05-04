@@ -36,8 +36,9 @@ class OAuthService {
     }
     
     // 2. Open browser for user to authenticate
+    // Added 'public_repo' explicitly to ensure fork permissions are granted
     final authUrl = Uri.parse(
-        'https://github.com/login/oauth/authorize?client_id=$clientId&redirect_uri=$_redirectUri&scope=repo,user');
+        'https://github.com/login/oauth/authorize?client_id=$clientId&redirect_uri=$_redirectUri&scope=repo,user,public_repo');
     
     if (await canLaunchUrl(authUrl)) {
       await launchUrl(authUrl, mode: LaunchMode.externalApplication);

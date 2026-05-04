@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/github_service.dart';
+import '../utils/link_handler.dart';
 
 class FileViewerScreen extends StatefulWidget {
   final Map<String, dynamic> fileItem;
@@ -222,13 +224,29 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
-                      child: SelectableText(
-                        _content ?? '',
-                        style: const TextStyle(
-                          fontFamily: 'Consolas', // Monospace
-                          fontSize: 14,
-                        ),
-                      ),
+                      child: widget.fileItem['name']?.toLowerCase().endsWith('.md') == true
+                          ? MarkdownBody(
+                              data: _content ?? '',
+                              selectable: true,
+                              onTapLink: (text, href, title) {
+                                if (href != null) {
+                                  handleGitHubLink(
+                                    context, 
+                                    href, 
+                                    widget.service, 
+                                    currentRepoFullName: widget.repoFullName,
+                                    currentBranch: widget.branch,
+                                  );
+                                }
+                              },
+                            )
+                          : SelectableText(
+                              _content ?? '',
+                              style: const TextStyle(
+                                fontFamily: 'Consolas', // Monospace
+                                fontSize: 14,
+                              ),
+                            ),
                     ),
     );
   }

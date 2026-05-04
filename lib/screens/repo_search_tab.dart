@@ -28,6 +28,14 @@ class _RepoSearchTabState extends State<RepoSearchTab> {
 
     try {
       final fullName = widget.repo['full_name'];
+      
+      // Delay slightly to prevent rate limiting if the user types quickly
+      // In a real app we should use debouncing, but this is a simple wait
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // If the user cleared the search box during the delay, abort.
+      if (_searchController.text.trim() != query.trim()) return;
+
       final results = await widget.service.searchCode(fullName, query.trim());
       if (mounted) {
         setState(() {

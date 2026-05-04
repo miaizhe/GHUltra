@@ -27,8 +27,13 @@ class GitHubService {
 
   Future<List<dynamic>> getUserRepositories() async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/user/repos?sort=updated&per_page=50'),
-      headers: _headers,
+      // Fetch more per page, or we'd need to handle pagination to truly get all repos.
+      // For now, let's fetch 100 to ensure we catch recent forks.
+      Uri.parse('$_baseUrl/user/repos?sort=updated&per_page=100&t=${DateTime.now().millisecondsSinceEpoch}'),
+      headers: {
+        ..._headers,
+        'Cache-Control': 'no-cache',
+      },
     );
 
     if (response.statusCode == 200) {
@@ -77,6 +82,42 @@ class GitHubService {
       if (commits.isNotEmpty) return commits.first;
     }
     return null;
+  }
+
+  Future<Map<String, dynamic>> getBranchInfo(String fullName, String branch) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/branches/$branch'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load branch info');
+    }
+  }
+
+  Future<Map<String, dynamic>> compareCommits(String fullName, String base, String head) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/compare/$base...$head'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to compare commits');
+    }
+  }
+
+  Future<Map<String, dynamic>> getRepoInfo(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load repo info');
+    }
   }
 
   Future<void> syncBranch(String fullName, String branch) async {
@@ -314,16 +355,116 @@ class GitHubService {
   // --- Search Code ---
 
   Future<List<dynamic>> searchCode(String fullName, String query) async {
-    final encodedQuery = Uri.encodeComponent('$query repo:$fullName');
+    // According to GitHub API docs, the q parameter needs to contain the search term and modifiers like repo:owner/name
+    final q = '$query repo:$fullName';
+    
+    // Instead of using replace() which does its own encoding that might mess up the 'repo:owner/name' part,
+    // let's construct the query string manually. The GitHub API expects the query parameter 'q' to be encoded,
+    // but sometimes standard Uri encoding encodes the colon ':' which GitHub search API handles fine, 
+    // but just to be safe and match standard curl behavior:
+    final encodedQuery = Uri.encodeQueryComponent(q);
+    final uri = Uri.parse('$_baseUrl/search/code?q=$encodedQuery');
+    
     final response = await http.get(
-      Uri.parse('$_baseUrl/search/code?q=$encodedQuery'),
+      uri,
       headers: _headers,
     );
 
     if (response.statusCode == 200) {
       return json.decode(response.body)['items'];
     } else {
-      throw Exception('Failed to search code');
+      throw Exception('Failed to search code: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  // --- Star & Fork ---
+
+  Future<bool> checkStarStatus(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/user/starred/$fullName'),
+      headers: _headers,
+    );
+    return response.statusCode == 204;
+  }
+
+  Future<void> starRepo(String fullName) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/user/starred/$fullName'),
+      headers: _headers,
+    );
+    if (response.statusCode != 204) {
+      throw Exception('Failed to star repository');
+    }
+  }
+
+  Future<void> unstarRepo(String fullName) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/user/starred/$fullName'),
+      headers: _headers,
+    );
+    if (response.statusCode != 204) {
+      throw Exception('Failed to unstar repository');
+    }
+  }
+
+  Future<Map<String, dynamic>> forkRepo(String fullName) async {
+    // The most standard way to send a POST request with no body in Dart HTTP package
+    // is to provide an empty string as body. This naturally sets Content-Length to 0
+    // and avoids the issue where http.post drops headers.
+    final response = await http.post(
+      Uri.parse('$_baseUrl/repos/$fullName/forks'),
+      headers: {
+        ..._headers,
+        'Content-Type': 'application/json',
+      },
+      body: '',
+    );
+    
+    if (response.statusCode == 202 || response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to fork repository: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  // --- Issues ---
+
+  Future<List<dynamic>> getIssues(String fullName, {String state = 'open'}) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/issues?state=$state&per_page=100'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load issues: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getIssue(String fullName, int issueNumber) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/issues/$issueNumber'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load issue: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<List<dynamic>> getIssueComments(String fullName, int issueNumber) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/issues/$issueNumber/comments?per_page=100'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load issue comments: ${response.statusCode} - ${response.body}');
     }
   }
 

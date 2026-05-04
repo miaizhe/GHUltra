@@ -20,6 +20,11 @@ class _RepoCodeTabState extends State<RepoCodeTab> {
   bool _isLoading = true;
   String? _error;
   final List<String> _pathStack = [''];
+  
+  // For fork sync status
+  int _behindBy = 0;
+  int _aheadBy = 0;
+  bool _isCheckingSync = false;
 
   @override
   void initState() {
@@ -27,6 +32,52 @@ class _RepoCodeTabState extends State<RepoCodeTab> {
     _currentBranch = widget.repo['default_branch'];
     _loadBranches();
     _loadContents('');
+    _checkSyncStatus();
+  }
+
+  Future<void> _checkSyncStatus() async {
+    if (widget.repo['fork'] != true || _currentBranch == null) return;
+    
+    setState(() {
+      _isCheckingSync = true;
+    });
+
+    try {
+      final fullName = widget.repo['full_name'];
+      
+      // 1. 获取完整仓库信息以获取 parent 信息
+      final repoInfo = await widget.service.getRepoInfo(fullName);
+      if (repoInfo['parent'] != null) {
+        final parentFullName = repoInfo['parent']['full_name'];
+        final defaultBranch = repoInfo['parent']['default_branch'];
+        
+        // 2. 比较父仓库默认分支和当前分支
+        // 语法: base...head
+        // 这里我们要看当前分支落后/领先于 upstream 的多少
+        final compare = await widget.service.compareCommits(
+          fullName, 
+          _currentBranch!, 
+          '$parentFullName:$defaultBranch'
+        );
+        
+        if (mounted) {
+          setState(() {
+            // ahead_by in this context means how many commits the upstream is ahead of us
+            // which means we are behind by that many commits.
+            _behindBy = compare['ahead_by'] ?? 0;
+            _aheadBy = compare['behind_by'] ?? 0;
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingSync = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadBranches() async {
@@ -171,6 +222,7 @@ class _RepoCodeTabState extends State<RepoCodeTab> {
                   _pathStack.add('');
                 });
                 _loadContents('');
+                _checkSyncStatus();
               }
             },
           ),
@@ -213,11 +265,38 @@ class _RepoCodeTabState extends State<RepoCodeTab> {
             ),
           ),
           if (isFork)
-            IconButton(
-              icon: const Icon(Icons.sync),
-              tooltip: 'Sync branch',
-              onPressed: _syncBranch,
-            ),
+            if (_isCheckingSync)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (_behindBy > 0)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.sync),
+                    tooltip: 'Sync branch from upstream',
+                    onPressed: _syncBranch,
+                  ),
+                  Text(
+                    '$_behindBy behind',
+                    style: const TextStyle(fontSize: 10, color: Colors.red),
+                  ),
+                ],
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Text(
+                  'Up to date',
+                  style: TextStyle(fontSize: 12, color: Colors.green),
+                ),
+              ),
         ],
       ),
     );

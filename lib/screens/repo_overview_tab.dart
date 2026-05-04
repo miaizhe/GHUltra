@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../services/github_service.dart';
+import 'repo_detail_screen.dart';
+import '../utils/link_handler.dart';
 
 class RepoOverviewTab extends StatefulWidget {
   final Map<String, dynamic> repo;
@@ -16,6 +18,7 @@ class RepoOverviewTab extends StatefulWidget {
 class RepoOverviewTabState extends State<RepoOverviewTab> {
   String? _readmeContent;
   String? _licenseContent;
+  Map<String, dynamic>? _repoInfo;
   bool _isLoading = true;
   String? _error;
 
@@ -35,10 +38,12 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
       final results = await Future.wait([
         widget.service.getReadme(fullName).catchError((_) => <String, dynamic>{}),
         widget.service.getLicense(fullName).catchError((_) => <String, dynamic>{}),
+        widget.service.getRepoInfo(fullName).catchError((_) => <String, dynamic>{}),
       ]);
       
       final readmeData = results[0];
       final licenseData = results[1];
+      final repoInfo = results[2];
 
       String rContent = '';
       if (readmeData.isNotEmpty && readmeData['content'] != null) {
@@ -56,6 +61,7 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
         setState(() {
           _readmeContent = rContent;
           _licenseContent = lContent;
+          _repoInfo = repoInfo;
           _isLoading = false;
         });
       }
@@ -89,6 +95,35 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
               ),
             ],
           ),
+          if (_repoInfo != null && _repoInfo!['parent'] != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.call_split, size: 16, color: Color(0xFF57606A)),
+                const SizedBox(width: 8),
+                const Text('forked from ', style: TextStyle(color: Color(0xFF57606A))),
+                InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => RepoDetailScreen(
+                          repo: _repoInfo!['parent'],
+                          token: widget.service.token,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    _repoInfo!['parent']['full_name'],
+                    style: const TextStyle(
+                      color: Color(0xFF0969DA),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           if (widget.repo['description'] != null) ...[
             Text(
@@ -163,6 +198,17 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
       child: MarkdownBody(
         data: _readmeContent ?? '',
         selectable: true,
+        onTapLink: (text, href, title) {
+          if (href != null) {
+            handleGitHubLink(
+              context, 
+              href, 
+              widget.service, 
+              currentRepoFullName: widget.repo['full_name'],
+              currentBranch: widget.repo['default_branch'],
+            );
+          }
+        },
       ),
     );
   }
