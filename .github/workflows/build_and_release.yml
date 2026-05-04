@@ -91,14 +91,38 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
-      - name: Compress Windows build
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath GHUltra-Windows.zip
+      - name: Create Windows Installer
+        run: |
+          $issContent = @"
+          [Setup]
+          AppName=GHUltra
+          AppVersion=1.0.0
+          DefaultDirName={autopf}\GHUltra
+          DefaultGroupName=GHUltra
+          OutputDir=.
+          OutputBaseFilename=GHUltra-Windows-Setup
+          Compression=lzma
+          SolidCompression=yes
+          ArchitecturesInstallIn64BitMode=x64
+          
+          [Files]
+          Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+          
+          [Icons]
+          Name: "{group}\GHUltra"; Filename: "{app}\ghultra.exe"
+          Name: "{autodesktop}\GHUltra"; Filename: "{app}\ghultra.exe"; Tasks: desktopicon
+          
+          [Tasks]
+          Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
+          "@
+          Set-Content -Path installer.iss -Value $issContent
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-zip
-          path: GHUltra-Windows.zip
+          name: windows-installer
+          path: GHUltra-Windows-Setup.exe
 
   build-macos:
     name: Build macOS App
@@ -118,17 +142,17 @@ jobs:
       - name: Build macOS
         run: flutter build macos --release
 
-      - name: Compress macOS build
+      - name: Create macOS DMG
         run: |
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../GHUltra-macOS.zip ghultra.app
+          hdiutil create -volname "GHUltra" -srcfolder ghultra.app -ov -format UDZO ../../../../../GHUltra-macOS.dmg
           cd ../../../../../
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-zip
-          path: GHUltra-macOS.zip
+          name: macos-dmg
+          path: GHUltra-macOS.dmg
 
   release:
     name: Create GitHub Release
@@ -149,13 +173,13 @@ jobs:
       - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
-          name: windows-zip
+          name: windows-installer
           path: artifacts/windows
 
       - name: Download macOS Artifact
         uses: actions/download-artifact@v4
         with:
-          name: macos-zip
+          name: macos-dmg
           path: artifacts/macos
 
       - name: Generate Release Info
@@ -177,10 +201,10 @@ jobs:
             📅 **打包日期**: ${{ env.DATE }}
             📝 **最新提交**: ${{ env.COMMIT_MSG }}
             
-            包含 Android (APK)、Windows (ZIP) 和 macOS (ZIP) 的安装包。
+            包含 Android (APK)、Windows (一键安装包) 和 macOS (DMG 镜像) 的安装包。
           files: |
             artifacts/android/app-release.apk
-            artifacts/windows/GHUltra-Windows.zip
-            artifacts/macos/GHUltra-macOS.zip
+            artifacts/windows/GHUltra-Windows-Setup.exe
+            artifacts/macos/GHUltra-macOS.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
