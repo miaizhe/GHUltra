@@ -28,6 +28,7 @@ class NotificationService {
   NotificationService._internal();
 
   static BuildContext? navigatorKey;
+  final ValueNotifier<int> unreadCount = ValueNotifier<int>(0);
 
   Future<void> init() async {
     if (Platform.isAndroid) {
@@ -58,12 +59,12 @@ class NotificationService {
           networkType: NetworkType.connected,
         ),
       );
-    } else if (Platform.isWindows) {
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       await localNotifier.setup(
         appName: 'GHUltra',
         shortcutPolicy: ShortcutPolicy.requireCreate,
       );
-      // Polling timer for windows while app is open
+      // Polling timer for desktop while app is open
       Timer.periodic(const Duration(minutes: 2), (timer) {
         fetchAndNotify();
       });
@@ -79,6 +80,8 @@ class NotificationService {
       final service = GitHubService(token);
       final notifications = await service.getNotifications();
       
+      NotificationService().unreadCount.value = notifications.length;
+
       if (notifications.isEmpty) return;
 
       final lastIdStr = prefs.getString('last_notif_id');
@@ -134,7 +137,7 @@ class NotificationService {
         platformChannelSpecifics,
         payload: payload,
       );
-    } else if (Platform.isWindows) {
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       LocalNotification notification = LocalNotification(
         title: title,
         body: body,

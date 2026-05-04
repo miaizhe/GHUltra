@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/github_service.dart';
+import '../services/notification_service.dart';
 import 'webview_screen.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -36,6 +37,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     try {
       final notifications = await _service.getNotifications();
+      NotificationService().unreadCount.value = notifications.length;
       if (mounted) {
         setState(() {
           _notifications = notifications;

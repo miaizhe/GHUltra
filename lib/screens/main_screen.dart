@@ -30,6 +30,8 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _requestPermissions();
     _listenToNotifications();
+    // Initial fetch to update badge count
+    NotificationService.fetchAndNotify();
   }
 
   void _requestPermissions() async {
@@ -120,8 +122,26 @@ class _MainScreenState extends State<MainScreen> {
             label: context.l10n('search'),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.notifications_outlined),
-            selectedIcon: const Icon(Icons.notifications),
+            icon: ValueListenableBuilder<int>(
+              valueListenable: NotificationService().unreadCount,
+              builder: (context, count, child) {
+                return Badge(
+                  isLabelVisible: count > 0,
+                  label: Text(count.toString()),
+                  child: const Icon(Icons.notifications_outlined),
+                );
+              },
+            ),
+            selectedIcon: ValueListenableBuilder<int>(
+              valueListenable: NotificationService().unreadCount,
+              builder: (context, count, child) {
+                return Badge(
+                  isLabelVisible: count > 0,
+                  label: Text(count.toString()),
+                  child: const Icon(Icons.notifications),
+                );
+              },
+            ),
             label: context.l10n('inbox'),
           ),
           NavigationDestination(
