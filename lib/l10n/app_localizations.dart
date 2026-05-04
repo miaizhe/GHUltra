@@ -91,7 +91,7 @@ class AppLocalizations {
       'sync_branch': '同步分支',
       'switch_branch': '切换分支',
       'code': '代码',
-      'search_hint': '搜索仓库、用户...',
+      'search_hint': '搜索我的仓库...',
       'remember_window_size': '记忆窗口大小',
       'remember_window_size_desc': '在启动时恢复上次的窗口大小',
     },

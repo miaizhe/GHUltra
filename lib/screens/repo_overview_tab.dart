@@ -10,10 +10,10 @@ class RepoOverviewTab extends StatefulWidget {
   const RepoOverviewTab({super.key, required this.repo, required this.service});
 
   @override
-  State<RepoOverviewTab> createState() => _RepoOverviewTabState();
+  State<RepoOverviewTab> createState() => RepoOverviewTabState();
 }
 
-class _RepoOverviewTabState extends State<RepoOverviewTab> {
+class RepoOverviewTabState extends State<RepoOverviewTab> {
   String? _readmeContent;
   String? _licenseContent;
   bool _isLoading = true;
@@ -22,10 +22,14 @@ class _RepoOverviewTabState extends State<RepoOverviewTab> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    loadData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> loadData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final fullName = widget.repo['full_name'];
       final results = await Future.wait([

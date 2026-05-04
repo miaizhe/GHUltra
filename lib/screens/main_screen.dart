@@ -23,18 +23,11 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  late final List<Widget> _tabs;
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
   @override
   void initState() {
     super.initState();
-    _tabs = [
-      HomeScreen(token: widget.token, isTab: true),
-      SearchScreen(token: widget.token, isTab: true),
-      NotificationsScreen(token: widget.token, isTab: true),
-      AccountScreen(token: widget.token),
-    ];
     _requestPermissions();
     _listenToNotifications();
   }
@@ -101,7 +94,12 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _tabs,
+        children: [
+          HomeScreen(key: _homeScreenKey, token: widget.token, isTab: true),
+          SearchScreen(token: widget.token, isTab: true),
+          NotificationsScreen(token: widget.token, isTab: true),
+          AccountScreen(token: widget.token),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

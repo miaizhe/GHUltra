@@ -19,6 +19,7 @@ class RepoDetailScreen extends StatefulWidget {
 
 class _RepoDetailScreenState extends State<RepoDetailScreen> {
   late GitHubService _service;
+  final GlobalKey<RepoOverviewTabState> _overviewKey = GlobalKey<RepoOverviewTabState>();
 
   @override
   void initState() {
@@ -33,6 +34,14 @@ class _RepoDetailScreenState extends State<RepoDetailScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.repo['name']),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                _overviewKey.currentState?.loadData();
+              },
+            ),
+          ],
           bottom: const TabBar(
             isScrollable: true,
             labelColor: Color(0xFF0969DA),
@@ -50,7 +59,7 @@ class _RepoDetailScreenState extends State<RepoDetailScreen> {
         ),
         body: TabBarView(
           children: [
-            RepoOverviewTab(repo: widget.repo, service: _service),
+            RepoOverviewTab(key: _overviewKey, repo: widget.repo, service: _service),
             RepoCodeTab(repo: widget.repo, service: _service),
             RepoReleasesTab(repo: widget.repo, service: _service),
             RepoActionsTab(repo: widget.repo, service: _service),
