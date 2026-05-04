@@ -71,12 +71,10 @@ lib/
    git clone https://github.com/miaizhe/GHUltra.git
    cd GHUltra
    ```
-
 2. 获取依赖包：
    ```bash
    flutter pub get
    ```
-
 3. 运行应用：
    ```bash
    # 运行 macOS 版本
@@ -84,12 +82,14 @@ lib/
 
    # 运行 Windows 版本
    flutter run -d windows
-   
+
    # 运行 Android 版本
    flutter run -d android
    ```
 
 ## 你们的每一个star都是我更新的动力
+
+\##本项目欢迎大家反馈问题和pr，但是pr前请确认编译通过和功能正常
 
 ## 📄 许可证 (License)
 
