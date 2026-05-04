@@ -54,37 +54,56 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final searchField = TextField(
+      controller: _searchController,
+      autofocus: !widget.isTab,
+      decoration: InputDecoration(
+        hintText: 'Search GitHub repositories...',
+        prefixIcon: widget.isTab ? const Icon(Icons.search) : null,
+        border: widget.isTab ? OutlineInputBorder(borderRadius: BorderRadius.circular(12)) : InputBorder.none,
+        enabledBorder: widget.isTab ? OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+        ) : InputBorder.none,
+        focusedBorder: widget.isTab ? OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.blue, width: 2.0),
+        ) : InputBorder.none,
+        filled: widget.isTab,
+        contentPadding: widget.isTab ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12) : EdgeInsets.zero,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.clear),
+          onPressed: () {
+            _searchController.clear();
+            setState(() {
+              _searchResults = null;
+            });
+          },
+        ),
+      ),
+      textInputAction: TextInputAction.search,
+      onSubmitted: _performSearch,
+    );
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: widget.isTab ? null : AppBar(
         backgroundColor: Colors.transparent,
-        title: TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search GitHub repositories...',
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            filled: false,
-            contentPadding: EdgeInsets.zero,
-          ),
-          textInputAction: TextInputAction.search,
-          onSubmitted: _performSearch,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _searchController.clear();
-              setState(() {
-                _searchResults = null;
-              });
-            },
-          ),
-        ],
+        title: searchField,
       ),
-      body: _buildBody(),
+      body: widget.isTab
+          ? SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: searchField,
+                  ),
+                  Expanded(child: _buildBody()),
+                ],
+              ),
+            )
+          : _buildBody(),
     );
   }
 

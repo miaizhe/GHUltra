@@ -78,9 +78,9 @@ class _MainScreenState extends State<MainScreen> {
       }
 
       if (urlToOpen != null && mounted) {
-        if (Platform.isAndroid) {
-          // Use Chrome Custom Tabs on Android for Passkey support
-          await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.inAppBrowserView);
+        if (Platform.isAndroid || Platform.isMacOS) {
+          // Use Chrome Custom Tabs/Default Browser for Passkey support
+          await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.externalApplication);
         } else {
           // Use WebView for Windows
           Navigator.of(context).push(

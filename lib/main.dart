@@ -184,46 +184,44 @@ class GHUltraApp extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             navigationBarTheme: NavigationBarThemeData(
-              backgroundColor: settings.backgroundImagePath != null 
-                  ? const Color(0xFF0D1117).withOpacity(0.8) 
-                  : const Color(0xFF0D1117),
-              indicatorColor: primaryColor.withOpacity(0.2),
-            ),
+            backgroundColor: settings.backgroundImagePath != null 
+                ? const Color(0xFF0D1117).withOpacity(0.8) 
+                : const Color(0xFF0D1117),
+            indicatorColor: primaryColor.withOpacity(0.2),
           ),
-          home: _buildHomeWithBackground(settings),
-        );
-      },
-    );
-  }
+        ),
+        builder: (context, child) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final defaultBgColor = isDark ? const Color(0xFF0D1117) : Colors.white;
+          final overlayColor = defaultBgColor.withOpacity(settings.backgroundOpacity);
 
-  Widget _buildHomeWithBackground(AppSettingsProvider settings) {
-    Widget child = initialToken != null && initialToken!.isNotEmpty
-        ? MainScreen(token: initialToken!)
-        : const LoginScreen();
+          if (settings.backgroundImagePath != null && settings.backgroundImagePath!.isNotEmpty) {
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.file(
+                    File(settings.backgroundImagePath!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(color: overlayColor),
+                ),
+                Positioned.fill(child: child!),
+              ],
+            );
+          }
 
-    if (settings.backgroundImagePath != null && settings.backgroundImagePath!.isNotEmpty) {
-      return Stack(
-        children: [
-          Positioned.fill(
-            child: Image.file(
-              File(settings.backgroundImagePath!),
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              color: Colors.white.withOpacity(settings.backgroundOpacity),
-            ),
-          ),
-          Positioned.fill(child: child),
-        ],
+          return Container(
+            color: defaultBgColor,
+            child: child,
+          );
+        },
+        home: initialToken != null && initialToken!.isNotEmpty
+            ? MainScreen(token: initialToken!)
+            : const LoginScreen(),
       );
-    }
-    
-    // Default background
-    return Container(
-      color: const Color(0xFFF6F8FA),
-      child: child,
-    );
-  }
+    },
+  );
+}
 }

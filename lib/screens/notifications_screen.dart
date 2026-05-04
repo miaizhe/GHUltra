@@ -156,9 +156,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               }
 
               if (urlToOpen != null && mounted) {
-                if (Theme.of(context).platform == TargetPlatform.android) {
-                  // Use url_launcher for Android Custom Tabs which supports Passkeys (WebAuthn)
-                  await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.inAppBrowserView);
+                if (Theme.of(context).platform == TargetPlatform.android || Theme.of(context).platform == TargetPlatform.macOS) {
+                  // Use external browser which supports Passkeys (WebAuthn)
+                  await launchUrl(Uri.parse(urlToOpen!), mode: LaunchMode.externalApplication);
                 } else {
                   // For Windows and others use the embedded WebView
                   Navigator.of(context).push(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,13 +15,24 @@ class OAuthService {
   static const String _redirectUri = 'http://localhost:$_port/callback';
 
   Future<String?> authenticate() async {
-    HttpServer? server;
+    HttpServer? server4;
+    HttpServer? server6;
     try {
-      // 尝试绑定到 loopback
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port);
+      server4 = await HttpServer.bind(InternetAddress.loopbackIPv4, _port);
     } catch (e) {
-      // 如果失败，在某些 Android 设备上可能需要绑定到 anyIPv4
-      server = await HttpServer.bind(InternetAddress.anyIPv4, _port);
+      try {
+        server4 = await HttpServer.bind(InternetAddress.anyIPv4, _port);
+      } catch (_) {}
+    }
+    
+    try {
+      server6 = await HttpServer.bind(InternetAddress.loopbackIPv6, _port);
+    } catch (e) {
+      // ignore
+    }
+
+    if (server4 == null && server6 == null) {
+      throw Exception('Failed to bind to any local port for OAuth callback.');
     }
     
     // 2. Open browser for user to authenticate
@@ -30,26 +42,44 @@ class OAuthService {
     if (await canLaunchUrl(authUrl)) {
       await launchUrl(authUrl, mode: LaunchMode.externalApplication);
     } else {
-      await server.close();
+      await server4?.close();
+      await server6?.close();
       throw Exception('Could not launch browser');
     }
 
     // 3. Wait for the redirect callback
     String? code;
-    await for (HttpRequest request in server) {
-      if (request.uri.path == '/callback') {
-        code = request.uri.queryParameters['code'];
-        
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.html
-          ..write('<html><body><h1>Authentication Successful!</h1><p>You can close this window and return to GHUltra.</p><script>window.close();</script></body></html>');
-        await request.response.close();
-        break; // Stop listening after we get the code
+    
+    // We listen on both IPv4 and IPv6 to ensure we catch the localhost redirect
+    // regardless of how the OS resolves "localhost"
+    HttpRequest? matchedRequest;
+    final completer = Completer<HttpRequest>();
+
+    void handleRequest(HttpRequest req) {
+      if (req.uri.path == '/callback' && !completer.isCompleted) {
+        completer.complete(req);
       }
     }
+
+    final sub4 = server4?.listen(handleRequest);
+    final sub6 = server6?.listen(handleRequest);
+
+    matchedRequest = await completer.future;
+
+    if (matchedRequest != null) {
+      code = matchedRequest.uri.queryParameters['code'];
+      
+      matchedRequest.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.html
+        ..write('<html><body><h1>Authentication Successful!</h1><p>You can close this window and return to GHUltra.</p><script>window.close();</script></body></html>');
+      await matchedRequest.response.close();
+    }
     
-    await server.close();
+    await sub4?.cancel();
+    await sub6?.cancel();
+    await server4?.close();
+    await server6?.close();
 
     if (code != null) {
       // 4. Exchange code for token
