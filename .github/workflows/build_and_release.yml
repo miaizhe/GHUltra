@@ -100,9 +100,39 @@ jobs:
           name: windows-zip
           path: GHUltra-Windows.zip
 
+  build-macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Compress macOS build
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../GHUltra-macOS.zip ghultra.app
+          cd ../../../../../
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-zip
+          path: GHUltra-macOS.zip
+
   release:
     name: Create GitHub Release
-    needs: [build-android, build-windows]
+    needs: [build-android, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -121,6 +151,12 @@ jobs:
         with:
           name: windows-zip
           path: artifacts/windows
+
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-zip
+          path: artifacts/macos
 
       - name: Generate Release Info
         id: release_info
@@ -141,9 +177,10 @@ jobs:
             📅 **打包日期**: ${{ env.DATE }}
             📝 **最新提交**: ${{ env.COMMIT_MSG }}
             
-            包含 Android (APK) 和 Windows (ZIP) 的安装包。
+            包含 Android (APK)、Windows (ZIP) 和 macOS (ZIP) 的安装包。
           files: |
             artifacts/android/app-release.apk
             artifacts/windows/GHUltra-Windows.zip
+            artifacts/macos/GHUltra-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

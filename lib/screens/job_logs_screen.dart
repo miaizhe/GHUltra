@@ -284,25 +284,18 @@ class _JobLogsScreenState extends State<JobLogsScreen> {
           IconButton(
             icon: const Icon(Icons.public),
             tooltip: 'View in App Browser',
-            onPressed: () async {
+            onPressed: () {
               final url = widget.job['html_url'];
               if (url != null) {
-                if (Theme.of(context).platform == TargetPlatform.macOS) {
-                  // Use external browser on macOS since WKWebView lacks passkey support
-                  if (await canLaunchUrl(Uri.parse(url))) {
-                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-                  }
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WebViewScreen(
-                        url: url,
-                        title: widget.stepName != null ? 'Step: ${widget.stepName}' : 'Job Logs',
-                      ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WebViewScreen(
+                      url: url,
+                      title: widget.stepName != null ? 'Step: ${widget.stepName}' : 'Job Logs',
                     ),
-                  );
-                }
+                  ),
+                );
               }
             },
           ),

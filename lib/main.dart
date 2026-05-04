@@ -13,13 +13,36 @@ import 'providers/app_settings_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  final prefs = await SharedPreferences.getInstance();
+
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
+    
+    final remember = prefs.getBool('rememberWindowSize') ?? false;
+    Size initialSize = const Size(1200, 800);
+    
+    if (remember) {
+      final width = prefs.getDouble('windowWidth');
+      final height = prefs.getDouble('windowHeight');
+      if (width != null && height != null) {
+        initialSize = Size(width, height);
+      }
+    }
+    
+    WindowOptions windowOptions = WindowOptions(
+      size: initialSize,
+      center: true,
+      skipTaskbar: false,
+    );
+    
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
   }
 
   await NotificationService().init();
 
-  final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('github_token');
 
   runApp(
@@ -32,10 +55,42 @@ void main() async {
   );
 }
 
-class GHUltraApp extends StatelessWidget {
+class GHUltraApp extends StatefulWidget {
   final String? initialToken;
 
   const GHUltraApp({super.key, this.initialToken});
+
+  @override
+  State<GHUltraApp> createState() => _GHUltraAppState();
+}
+
+class _GHUltraAppState extends State<GHUltraApp> with WindowListener {
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      windowManager.addListener(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      windowManager.removeListener(this);
+    }
+    super.dispose();
+  }
+
+  @override
+  void onWindowResized() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool('rememberWindowSize') ?? false;
+    if (remember) {
+      final size = await windowManager.getSize();
+      await prefs.setDouble('windowWidth', size.width);
+      await prefs.setDouble('windowHeight', size.height);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -217,8 +272,8 @@ class GHUltraApp extends StatelessWidget {
             child: child,
           );
         },
-        home: initialToken != null && initialToken!.isNotEmpty
-            ? MainScreen(token: initialToken!)
+        home: widget.initialToken != null && widget.initialToken!.isNotEmpty
+            ? MainScreen(token: widget.initialToken!)
             : const LoginScreen(),
       );
     },

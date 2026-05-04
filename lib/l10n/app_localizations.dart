@@ -51,6 +51,8 @@ class AppLocalizations {
       'switch_branch': 'Switch Branch',
       'code': 'Code',
       'search_hint': 'Search repositories, users...',
+      'remember_window_size': 'Remember Window Size',
+      'remember_window_size_desc': 'Restore previous window size on startup',
     },
     'zh': {
       'repositories': '仓库',
@@ -90,6 +92,8 @@ class AppLocalizations {
       'switch_branch': '切换分支',
       'code': '代码',
       'search_hint': '搜索仓库、用户...',
+      'remember_window_size': '记忆窗口大小',
+      'remember_window_size_desc': '在启动时恢复上次的窗口大小',
     },
   };
 

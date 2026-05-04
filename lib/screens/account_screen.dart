@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -247,6 +248,14 @@ class _AccountScreenState extends State<AccountScreen> {
                     onChanged: (val) => settings.setEnableDynamicColor(val),
                   ),
                 ],
+                if (Platform.isWindows || Platform.isMacOS || Platform.isLinux)
+                  SwitchListTile(
+                    secondary: const Icon(Icons.desktop_windows),
+                    title: Text(context.l10n('remember_window_size')),
+                    subtitle: Text(context.l10n('remember_window_size_desc')),
+                    value: settings.rememberWindowSize,
+                    onChanged: (val) => settings.setRememberWindowSize(val),
+                  ),
               ],
             );
           },

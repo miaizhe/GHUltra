@@ -116,6 +116,21 @@ class GitHubService {
     }
   }
 
+  Future<Map<String, dynamic>> getLicense(String fullName) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/repos/$fullName/license'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 404) {
+      return {}; // No license found
+    } else {
+      throw Exception('Failed to load license');
+    }
+  }
+
   Future<Map<String, dynamic>> getFileInfo(String fullName, String path, {String? branch}) async {
     String url = '$_baseUrl/repos/$fullName/contents/$path';
     if (branch != null) {

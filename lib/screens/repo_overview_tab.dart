@@ -15,37 +15,50 @@ class RepoOverviewTab extends StatefulWidget {
 
 class _RepoOverviewTabState extends State<RepoOverviewTab> {
   String? _readmeContent;
+  String? _licenseContent;
   bool _isLoading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadReadme();
+    _loadData();
   }
 
-  Future<void> _loadReadme() async {
+  Future<void> _loadData() async {
     try {
       final fullName = widget.repo['full_name'];
-      final readmeData = await widget.service.getReadme(fullName);
+      final results = await Future.wait([
+        widget.service.getReadme(fullName).catchError((_) => <String, dynamic>{}),
+        widget.service.getLicense(fullName).catchError((_) => <String, dynamic>{}),
+      ]);
       
-      String content = '';
+      final readmeData = results[0];
+      final licenseData = results[1];
+
+      String rContent = '';
       if (readmeData.isNotEmpty && readmeData['content'] != null) {
-        content = utf8.decode(base64.decode(readmeData['content'].replaceAll('\n', '')));
+        rContent = utf8.decode(base64.decode(readmeData['content'].replaceAll('\n', '')));
       } else {
-        content = '*No README found for this repository.*';
+        rContent = '*No README found for this repository.*';
+      }
+
+      String lContent = '';
+      if (licenseData.isNotEmpty && licenseData['content'] != null) {
+        lContent = utf8.decode(base64.decode(licenseData['content'].replaceAll('\n', '')));
       }
 
       if (mounted) {
         setState(() {
-          _readmeContent = content;
+          _readmeContent = rContent;
+          _licenseContent = lContent;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load README';
+          _error = 'Failed to load overview data';
           _isLoading = false;
         });
       }
@@ -114,6 +127,18 @@ class _RepoOverviewTabState extends State<RepoOverviewTab> {
           ),
           const SizedBox(height: 16),
           _buildReadme(),
+          
+          if (_licenseContent != null && _licenseContent!.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text(
+              'License',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildLicense(),
+          ],
         ],
       ),
     );
@@ -124,6 +149,7 @@ class _RepoOverviewTabState extends State<RepoOverviewTab> {
     if (_error != null) return Text(_error!, style: const TextStyle(color: Colors.red));
     
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD0D7DE)),
@@ -133,6 +159,26 @@ class _RepoOverviewTabState extends State<RepoOverviewTab> {
       child: MarkdownBody(
         data: _readmeContent ?? '',
         selectable: true,
+      ),
+    );
+  }
+
+  Widget _buildLicense() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD0D7DE)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: SelectableText(
+        _licenseContent ?? '',
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 13,
+          color: Color(0xFF24292E),
+        ),
       ),
     );
   }

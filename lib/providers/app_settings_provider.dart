@@ -12,6 +12,7 @@ class AppSettingsProvider extends ChangeNotifier {
   bool _enableDynamicColor = false;
   Color? _dynamicColor;
   ThemeMode _themeMode = ThemeMode.system;
+  bool _rememberWindowSize = false;
 
   String get languageCode => _languageCode;
   String? get backgroundImagePath => _backgroundImagePath;
@@ -19,6 +20,7 @@ class AppSettingsProvider extends ChangeNotifier {
   bool get enableDynamicColor => _enableDynamicColor;
   Color? get dynamicColor => _dynamicColor;
   ThemeMode get themeMode => _themeMode;
+  bool get rememberWindowSize => _rememberWindowSize;
 
   AppSettingsProvider() {
     _loadSettings();
@@ -30,6 +32,7 @@ class AppSettingsProvider extends ChangeNotifier {
     _backgroundImagePath = _prefs?.getString('backgroundImagePath');
     _backgroundOpacity = _prefs?.getDouble('backgroundOpacity') ?? 0.5;
     _enableDynamicColor = _prefs?.getBool('enableDynamicColor') ?? false;
+    _rememberWindowSize = _prefs?.getBool('rememberWindowSize') ?? false;
     
     final themeStr = _prefs?.getString('themeMode');
     if (themeStr == 'light') _themeMode = ThemeMode.light;
@@ -85,6 +88,12 @@ class AppSettingsProvider extends ChangeNotifier {
     if (mode == ThemeMode.light) modeStr = 'light';
     if (mode == ThemeMode.dark) modeStr = 'dark';
     await _prefs?.setString('themeMode', modeStr);
+    notifyListeners();
+  }
+
+  Future<void> setRememberWindowSize(bool remember) async {
+    _rememberWindowSize = remember;
+    await _prefs?.setBool('rememberWindowSize', remember);
     notifyListeners();
   }
 
