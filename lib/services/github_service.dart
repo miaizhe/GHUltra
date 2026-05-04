@@ -25,6 +25,45 @@ class GitHubService {
     }
   }
 
+  Future<Map<String, dynamic>> createRepository({
+    required String name,
+    String description = '',
+    bool isPrivate = false,
+    bool autoInit = false,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/user/repos'),
+      headers: {
+        ..._headers,
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'name': name,
+        'description': description,
+        'private': isPrivate,
+        'auto_init': autoInit,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      try {
+        final errorData = json.decode(response.body);
+        String errorMessage = errorData['message'] ?? 'Unknown error';
+        if (errorData['errors'] != null && (errorData['errors'] as List).isNotEmpty) {
+          errorMessage = errorData['errors'][0]['message'] ?? errorMessage;
+        }
+        throw Exception(errorMessage);
+      } catch (e) {
+        if (e is Exception && !e.toString().startsWith('Exception: FormatException')) {
+          rethrow;
+        }
+        throw Exception('Failed to create repository: ${response.statusCode}');
+      }
+    }
+  }
+
   Future<Map<String, dynamic>> getUserInfo(String username) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/users/$username'),

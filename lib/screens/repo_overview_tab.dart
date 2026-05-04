@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -163,6 +164,55 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
                   ),
                 ),
               ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Clone options
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final cloneUrl = widget.repo['clone_url'];
+                    if (cloneUrl != null) {
+                      await Clipboard.setData(ClipboardData(text: cloneUrl));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('HTTPS Clone URL copied to clipboard')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.link, size: 16),
+                  label: const Text('HTTPS', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF24292E),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final sshUrl = widget.repo['ssh_url'];
+                    if (sshUrl != null) {
+                      await Clipboard.setData(ClipboardData(text: sshUrl));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('SSH Clone URL copied to clipboard')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.terminal, size: 16),
+                  label: const Text('SSH', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF24292E),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),

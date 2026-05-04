@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../services/github_service.dart';
 import '../widgets/repo_card.dart';
 import '../l10n/app_localizations.dart';
+import 'repo_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String token;
@@ -102,6 +103,11 @@ class HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Create Repository',
+            onPressed: _showCreateRepoDialog,
+          ),
+          IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
             onPressed: () {
               setState(() {
@@ -124,6 +130,130 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showCreateRepoDialog() async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    bool isPrivate = false;
+    bool autoInit = true;
+    bool isCreating = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Create Repository'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Repository Name',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Private'),
+                      subtitle: const Text('Only you can see this repository.'),
+                      value: isPrivate,
+                      onChanged: (val) => setState(() => isPrivate = val),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Initialize with README'),
+                      value: autoInit,
+                      onChanged: (val) => setState(() => autoInit = val),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isCreating ? null : () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isCreating
+                      ? null
+                      : () async {
+                          if (nameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Name cannot be empty')),
+                            );
+                            return;
+                          }
+                          setState(() => isCreating = true);
+                          try {
+                            final newRepo = await _service.createRepository(
+                              name: nameController.text.trim(),
+                              description: descriptionController.text.trim(),
+                              isPrivate: isPrivate,
+                              autoInit: autoInit,
+                            );
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              loadData(); // Refresh the list
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Repository created successfully!'),
+                                  action: SnackBarAction(
+                                    label: 'View',
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => RepoDetailScreen(
+                                            repo: newRepo,
+                                            token: widget.token,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setState(() => isCreating = false);
+                            if (context.mounted) {
+                              String errorMsg = e.toString();
+                              if (errorMsg.startsWith('Exception: ')) {
+                                errorMsg = errorMsg.substring(11);
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(errorMsg)),
+                              );
+                            }
+                          }
+                        },
+                  child: isCreating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildTabBody(BuildContext context) {
     return Column(
       children: [
@@ -132,6 +262,11 @@ class HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Create Repository',
+              onPressed: _showCreateRepoDialog,
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: loadData,
