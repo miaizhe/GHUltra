@@ -104,7 +104,7 @@ class HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Create Repository',
+            tooltip: context.l10n('create_repository'),
             onPressed: _showCreateRepoDialog,
           ),
           IconButton(
@@ -144,35 +144,35 @@ class HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Create Repository'),
+              title: Text(context.l10n('create_repository')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Repository Name',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n('repository_name'),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description (optional)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n('description_optional'),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     SwitchListTile(
-                      title: const Text('Private'),
-                      subtitle: const Text('Only you can see this repository.'),
+                      title: Text(context.l10n('private')),
+                      subtitle: Text(context.l10n('private_desc')),
                       value: isPrivate,
                       onChanged: (val) => setState(() => isPrivate = val),
                     ),
                     SwitchListTile(
-                      title: const Text('Initialize with README'),
+                      title: Text(context.l10n('init_readme')),
                       value: autoInit,
                       onChanged: (val) => setState(() => autoInit = val),
                     ),
@@ -182,7 +182,7 @@ class HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: isCreating ? null : () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(context.l10n('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: isCreating
@@ -190,7 +190,7 @@ class HomeScreenState extends State<HomeScreen> {
                       : () async {
                           if (nameController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Name cannot be empty')),
+                              SnackBar(content: Text(context.l10n('name_cannot_be_empty'))),
                             );
                             return;
                           }
@@ -207,9 +207,9 @@ class HomeScreenState extends State<HomeScreen> {
                               loadData(); // Refresh the list
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text('Repository created successfully!'),
+                                  content: Text(context.l10n('repo_created_success')),
                                   action: SnackBarAction(
-                                    label: 'View',
+                                    label: context.l10n('view'),
                                     onPressed: () {
                                       Navigator.push(
                                         context,
@@ -244,7 +244,7 @@ class HomeScreenState extends State<HomeScreen> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Create'),
+                      : Text(context.l10n('create')),
                 ),
               ],
             );
@@ -264,7 +264,7 @@ class HomeScreenState extends State<HomeScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.add),
-              tooltip: 'Create Repository',
+              tooltip: context.l10n('create_repository'),
               onPressed: _showCreateRepoDialog,
             ),
             IconButton(
