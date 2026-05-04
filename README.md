@@ -89,6 +89,8 @@ lib/
    flutter run -d android
    ```
 
+## 你们的每一个star都是我更新的动力
+
 ## 📄 许可证 (License)
 
 本项目采用 [GNU General Public License v3.0 (GPL-3.0)](LICENSE) 许可证。
