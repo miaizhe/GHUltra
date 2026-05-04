@@ -17,6 +17,7 @@ class RepoOverviewTab extends StatefulWidget {
 
 class RepoOverviewTabState extends State<RepoOverviewTab> {
   String? _readmeContent;
+  String? _readmePath;
   String? _licenseContent;
   Map<String, dynamic>? _repoInfo;
   bool _isLoading = true;
@@ -46,8 +47,10 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
       final repoInfo = results[2];
 
       String rContent = '';
+      String? rPath;
       if (readmeData.isNotEmpty && readmeData['content'] != null) {
         rContent = utf8.decode(base64.decode(readmeData['content'].replaceAll('\n', '')));
+        rPath = readmeData['path'];
       } else {
         rContent = '*No README found for this repository.*';
       }
@@ -60,6 +63,7 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
       if (mounted) {
         setState(() {
           _readmeContent = rContent;
+          _readmePath = rPath;
           _licenseContent = lContent;
           _repoInfo = repoInfo;
           _isLoading = false;
@@ -88,9 +92,15 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
               const Icon(Icons.book, size: 32, color: Color(0xFF0969DA)),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  widget.repo['full_name'],
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0969DA)),
+                child: InkWell(
+                  onTap: () {
+                    final owner = widget.repo['owner']['login'];
+                    handleGitHubLink(context, 'https://github.com/$owner', widget.service);
+                  },
+                  child: Text(
+                    widget.repo['full_name'],
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0969DA)),
+                  ),
                 ),
               ),
             ],
@@ -206,6 +216,7 @@ class RepoOverviewTabState extends State<RepoOverviewTab> {
               widget.service, 
               currentRepoFullName: widget.repo['full_name'],
               currentBranch: widget.repo['default_branch'],
+              currentFilePath: _readmePath,
             );
           }
         },

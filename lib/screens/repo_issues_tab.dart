@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/github_service.dart';
 import 'issue_detail_screen.dart';
+import '../utils/link_handler.dart';
 
 class RepoIssuesTab extends StatefulWidget {
   final Map<String, dynamic> repo;
@@ -159,9 +160,12 @@ class _RepoIssuesTabState extends State<RepoIssuesTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '#${issue['number']} opened by ${issue['user']['login']}',
-                  style: const TextStyle(color: Color(0xFF57606A), fontSize: 13),
+                InkWell(
+                  onTap: () => handleGitHubLink(context, 'https://github.com/${issue['user']['login']}', widget.service),
+                  child: Text(
+                    '#${issue['number']} opened by ${issue['user']['login']}',
+                    style: const TextStyle(color: Color(0xFF57606A), fontSize: 13),
+                  ),
                 ),
                 if (issue['labels'] != null && (issue['labels'] as List).isNotEmpty)
                   Padding(

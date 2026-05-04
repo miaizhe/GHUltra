@@ -236,6 +236,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                                     widget.service, 
                                     currentRepoFullName: widget.repoFullName,
                                     currentBranch: widget.branch,
+                                    currentFilePath: widget.fileItem['path'] ?? widget.fileItem['name'],
                                   );
                                 }
                               },

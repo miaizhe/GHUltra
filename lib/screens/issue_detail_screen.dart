@@ -89,9 +89,12 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(avatarUrl),
-                  radius: 14,
+                InkWell(
+                  onTap: () => handleGitHubLink(context, 'https://github.com/$author', widget.service),
+                  child: CircleAvatar(
+                    backgroundImage: NetworkImage(avatarUrl),
+                    radius: 14,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

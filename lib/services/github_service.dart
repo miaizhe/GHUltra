@@ -25,6 +25,32 @@ class GitHubService {
     }
   }
 
+  Future<Map<String, dynamic>> getUserInfo(String username) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/$username'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load user info: ${response.statusCode}');
+    }
+  }
+
+  Future<List<dynamic>> getUserPublicRepositories(String username) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/users/$username/repos?sort=updated&per_page=50'),
+      headers: _headers,
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load user repositories');
+    }
+  }
+
   Future<List<dynamic>> getUserRepositories() async {
     final response = await http.get(
       // Fetch more per page, or we'd need to handle pagination to truly get all repos.

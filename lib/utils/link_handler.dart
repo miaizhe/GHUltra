@@ -6,7 +6,9 @@ import '../screens/issue_detail_screen.dart';
 import '../screens/webview_screen.dart';
 import '../screens/file_viewer_screen.dart';
 
-Future<void> handleGitHubLink(BuildContext context, String url, GitHubService service, {String? currentRepoFullName, String? currentBranch}) async {
+import '../screens/user_profile_screen.dart';
+
+Future<void> handleGitHubLink(BuildContext context, String url, GitHubService service, {String? currentRepoFullName, String? currentBranch, String? currentFilePath}) async {
   try {
     Uri uri = Uri.parse(url);
     
@@ -19,7 +21,12 @@ Future<void> handleGitHubLink(BuildContext context, String url, GitHubService se
     if (!uri.hasScheme) {
       if (currentRepoFullName != null) {
         String cleanPath = uri.path;
-        if (cleanPath.startsWith('./')) cleanPath = cleanPath.substring(2);
+        if (currentFilePath != null) {
+          // Resolve against the current file's path (handles ../ and ./ automatically)
+          cleanPath = Uri.parse(currentFilePath).resolve(url).path;
+        } else {
+          if (cleanPath.startsWith('./')) cleanPath = cleanPath.substring(2);
+        }
         if (cleanPath.startsWith('/')) cleanPath = cleanPath.substring(1);
         
         _showLoading(context);
@@ -121,6 +128,29 @@ Future<void> handleGitHubLink(BuildContext context, String url, GitHubService se
         } catch (e) {
           if (context.mounted) Navigator.pop(context); // close loading
           // fallback to external if API fails
+        }
+      }
+      
+      // https://github.com/username
+      else if (pathSegments.length == 1) {
+        final username = pathSegments[0];
+        _showLoading(context);
+        try {
+          // Try to fetch user info to confirm it's a user
+          await service.getUserInfo(username);
+          if (context.mounted) {
+            Navigator.pop(context); // close loading
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserProfileScreen(username: username, service: service),
+              ),
+            );
+            return;
+          }
+        } catch (e) {
+          if (context.mounted) Navigator.pop(context); // close loading
+          // If not a user (or API failed), fallback
         }
       }
       

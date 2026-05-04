@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/github_service.dart';
+import '../utils/link_handler.dart';
 
 class RepoReleasesTab extends StatefulWidget {
   final Map<String, dynamic> repo;
@@ -121,6 +122,11 @@ class _RepoReleasesTabState extends State<RepoReleasesTab> {
                   MarkdownBody(
                     data: release['body'],
                     selectable: true,
+                    onTapLink: (text, href, title) {
+                      if (href != null) {
+                        handleGitHubLink(context, href, widget.service, currentRepoFullName: widget.repo['full_name']);
+                      }
+                    },
                   ),
                   const SizedBox(height: 16),
                 ],
